@@ -1,0 +1,87 @@
+package Server;
+
+import java.net.DatagramPacket;
+import java.net.DatagramSocket;
+import java.util.UUID;
+
+import com.sun.org.apache.xalan.internal.xsltc.compiler.util.Util;
+
+import constants.UDPConstants;
+
+public class ServerProvider {
+	private static Provider PROVIDER_INSTANCE;
+	
+	public static void start(int port) {
+		stop();
+		String sn=UUID.randomUUID().toString();
+		Provider provider=new Provider(sn,port);
+		provider.start();
+		PROVIDER_INSTANCE=provider;
+	}
+	private static void stop() {
+		if(PROVIDER_INSTANCE!=null) {
+			PROVIDER_INSTANCE.exit();
+			PROVIDER_INSTANCE=null;
+		}	
+	}
+	private static class Provider extends Thread{
+		private final byte[] sn;//服务器的sn
+		private final int port;//服务器端口
+		private boolean done=false;
+		private DatagramSocket ds=null;
+		//存储消息的Buffer
+		final byte[] buffer=new byte[128];				
+		public Provider(String sn, int port) {
+			super();
+			this.sn =sn.getBytes();//获得byte[]
+			this.port = port;
+		}
+		@Override
+		public void run() {
+			super.run();
+			System.out.println("UDPProvider Started");
+			try {
+				ds=new DatagramSocket(UDPConstants.UDP_PORT_SERVER);//服务器监听的端口-UDP
+				DatagramPacket receivePacket=new DatagramPacket(buffer,buffer.length);
+				while(!done) {
+					//接收
+					ds.receive(receivePacket);
+					//打印接收者的信息和发送者的信息
+					String clientIp=receivePacket.getAddress().getHostAddress();
+					int clientPort=receivePacket.getPort();
+					int clientDataLen=receivePacket.getLength();
+					byte[] clientData=receivePacket.getData();
+					//2字节的short-用户，代表命令类型（1，2），4字节的int，代表客户端端口
+					boolean isValid=(clientDataLen>=(UDPConstants.HEADER.length+2+4));
+					System.out.println("ServerProvider 接收到了来自IP: "+clientIp+" 端口号: "+clientPort+" 的消息,消息有效性为："+ isValid);
+					if(!isValid) {
+						//消息无效继续
+						continue;
+					}
+					//解析命令与回送端口
+					int index=UDPConstants.HEADER.length;//前八个字节
+					short cmd=(short) ((clientData[index++]<<8)|(clientData[index++] & 0xFF));
+					int responsePort=((clientData[index++])|
+							(clientData[index++])|
+							(clientData[index++])|
+							(clientData[index++]))& 0xFFFFFFFF;
+					
+				}
+			} catch (Exception e) {
+				close();
+			}
+			System.out.println("UDPProvider Finished");
+
+		}
+		public void exit(){
+			done=true;
+			close();
+		}	
+		public void close() {
+			if(ds!=null) {
+				ds.close();
+				ds=null;
+			}
+		}
+	}
+}

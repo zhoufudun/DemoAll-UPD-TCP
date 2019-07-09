@@ -1,0 +1,15 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<section name="Workbench">
+	<list key="org.eclipse.ui.internal.wizards.datatransfer.SmartImportRootWizardPage.knownSources">
+		<item value="C:\Users\12159\Desktop\kcp-java-noNetty"/>
+		<item value="C:\Users\12159\Desktop\github\kcp-java"/>
+		<item value="C:\Users\12159\Desktop\github\GenericsTest"/>
+		<item value="C:\Users\12159\Desktop\github\MyKCP"/>
+		<item value="C:\Users\12159\Desktop\workspace\jkcp-Test2"/>
+	</list>
+	<section name="NewWizardAction">
+		<item value="org.eclipse.jdt.ui.wizards.JavaProjectWizard" key="NewWizardSelectionPage.STORE_SELECTED_ID"/>
+		<list key="NewWizardSelectionPage.STORE_EXPANDED_CATEGORIES_ID">
+		</list>
+	</section>
+</section>

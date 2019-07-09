@@ -1,0 +1,15 @@
+package com;
+
+public class CilentHandler {
+	private Callback callback;
+	
+    public CilentHandler(Callback callback) {
+		super();
+		this.callback = callback;
+	}
+
+	static interface Callback{
+    	void println();
+    }
+				
+}

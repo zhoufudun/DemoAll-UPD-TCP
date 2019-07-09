@@ -1,0 +1,71 @@
+import java.io.BufferedReader;
+import java.io.InputStreamReader;
+import java.io.PrintStream;
+import java.net.Inet4Address;
+import java.net.InetSocketAddress;
+import java.net.ServerSocket;
+import java.net.Socket;
+
+public class Server {
+  public static void main(String[] agr)throws Exception{
+        ServerSocket server=new ServerSocket(2222);//服务器端口
+
+        System.out.print("服务器准备就绪~");
+        System.out.print("服务器信息"+server.getInetAddress()+" port:"+server.getLocalPort());
+        //无限循环
+        for(;;){
+            //得到客户端
+            Socket client =server.accept();//服务器等待客户端连接
+            //客户端构建异步线程
+            ClientHandler handler=new ClientHandler(client);
+            //启动线程
+            handler.start();
+            System.out.println("   KKK");
+        }
+
+
+  }
+  private static class ClientHandler extends Thread{
+      private Socket client;
+      private boolean flag=true;
+
+      ClientHandler(Socket client){
+          this.client=client;
+      }
+      @Override
+      public void run() {
+          super.run();
+          System.out.println("新客户端信息："+client.getInetAddress()+" port:"+client.getPort());
+          try {
+
+              //得到打印流，用于数据输出，服务器回送数据使用
+              PrintStream serverOutput=new PrintStream(client.getOutputStream());
+              //得到输入流，用于数据接收
+              BufferedReader serverInput=new BufferedReader(new InputStreamReader(client.getInputStream()));
+
+              do{
+                  //拿到客户端的一条数据
+                  String str=serverInput.readLine();//等待数据，阻塞
+                  if("bye".equalsIgnoreCase(str)){
+                      flag=false;
+                      //回送给客户端
+                      serverOutput.println("bye");
+                  }else{
+                      System.out.println(str);
+                      serverOutput.println("消息回显，"+str);
+                  }
+
+              }while(flag);
+              //释放资源
+              serverOutput.close();
+              serverInput.close();
+
+          }catch (Exception e){
+              System.out.println("连接异常断开");
+              e.printStackTrace();
+          }
+
+      }
+  }
+
+}

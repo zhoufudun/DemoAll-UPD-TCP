@@ -1,0 +1,11 @@
+package Utils;
+
+import java.io.Closeable;
+
+public class CloseUtils {
+	public void CloseAll(Closeable...Closeables) {
+		for(Closeable close:Closeables) {
+			
+		}
+	}
+}

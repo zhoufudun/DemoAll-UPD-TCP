@@ -1,0 +1,4 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<session version="1.0">
+<refactoring comment="Rename resource &apos;jkcp-Test3&apos; to &apos;jkcp-Test-loopSendAndRec&apos;" description="Rename resource &apos;jkcp-Test3&apos;" flags="7" id="org.eclipse.ltk.core.refactoring.rename.resource" input="/jkcp-Test3" name="jkcp-Test-loopSendAndRec" stamp="1559700892427" updateReferences="true"/>
+</session>

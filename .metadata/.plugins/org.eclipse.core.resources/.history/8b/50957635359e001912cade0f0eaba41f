@@ -1,0 +1,9 @@
+package com;
+
+public class CilentHandler {
+	
+    interface callback{
+    	
+    }
+				
+}

@@ -1,0 +1,19 @@
+package com;
+
+public class Test {
+	public static void main(String[] args) {
+		
+	}
+	class Handler{
+		CilentHandler cilentHandler=new CilentHandler(new CilentHandler.Callback() {
+			
+			@Override
+			public void println() {
+				
+				
+			}
+		});
+		CilentHandler.Student
+	}
+	
+}

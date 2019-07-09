@@ -1,0 +1,27 @@
+package Server;
+import java.io.BufferedReader;
+import java.io.IOException;
+import java.io.InputStream;
+import java.io.InputStreamReader;
+import java.io.OutputStream;
+import java.io.PrintStream;
+import java.lang.reflect.Array;
+import java.net.Inet4Address;
+import java.net.InetSocketAddress;
+import java.net.ServerSocket;
+import java.net.Socket;
+
+import constants.TCPConstants;
+import constants.Tool;
+
+public class Server {
+	public static void main(String[] agr)throws Exception{
+		ServerProvider.start(TCPConstants.TCP_PORT_SERVER);//服务的TCP端口
+		try {
+			System.in.read();//读取任意一行
+		}catch(IOException e) {
+			e.printStackTrace();
+		}
+		ServerProvider.stop();//退出
+	}
+}

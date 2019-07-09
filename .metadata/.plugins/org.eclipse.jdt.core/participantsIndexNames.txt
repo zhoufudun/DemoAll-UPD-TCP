@@ -1,0 +1,7 @@
+INDEX VERSION 1.130
+C:\Users\12159\Desktop\workspace\.metadata\.plugins\org.eclipse.jst.jsp.core\jspsearch\4069291932.index
+\jkcp-Test2\src\main\java
+C:\Users\12159\Desktop\workspace\.metadata\.plugins\org.eclipse.jst.jsp.core\jspsearch\1959690608.index
+\jkcp\src\main\resources
+C:\Users\12159\Desktop\workspace\.metadata\.plugins\org.eclipse.jst.jsp.core\jspsearch\2881484147.index
+\noNetty-jkcp\src\main\resources

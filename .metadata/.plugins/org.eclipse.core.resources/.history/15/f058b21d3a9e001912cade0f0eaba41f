@@ -1,0 +1,19 @@
+package com;
+
+import com.CilentHandler.Student;
+
+public class Test {
+	public static void main(String[] args) {
+		Test.Handler
+	}
+	static class Handler{
+		CilentHandler cilentHandler=new CilentHandler(new CilentHandler.Callback() {
+			
+			@Override
+			public Student getS(CilentHandler cilentHandler) {
+				return cilentHandler.getStudent();
+			}
+		});		
+	}
+	
+}

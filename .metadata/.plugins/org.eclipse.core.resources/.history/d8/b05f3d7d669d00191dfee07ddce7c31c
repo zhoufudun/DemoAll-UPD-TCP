@@ -1,0 +1,11 @@
+package Client;
+
+import entity.ServerInfo;
+
+public class Client {
+	public static void main(String[] args) {
+		ServerInfo info=ClientSearch.searchServer(10000);
+		ClientSearch.Listener.
+		System.out.println("server:"+info.toString());
+	}
+}

@@ -1,0 +1,10 @@
+package com;
+
+public class CilentHandler {
+	private 
+	
+    interface Callback{
+    	void println(CilentHandler callback);
+    }
+				
+}

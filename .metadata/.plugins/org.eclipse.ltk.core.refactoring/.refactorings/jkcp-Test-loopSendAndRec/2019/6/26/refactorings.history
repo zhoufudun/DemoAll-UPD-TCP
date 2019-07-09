@@ -1,0 +1,4 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<session version="1.0">
+<refactoring comment="Copy 2 elements to &apos;com.UDPServer.java&apos;&#x0D;&#x0A;- Original project: &apos;jkcp-Test-loopSendAndRec&apos;&#x0D;&#x0A;- Destination element: &apos;com.UDPServer.java&apos;&#x0D;&#x0A;- Original elements:&#x0D;&#x0A;     org.beykery.jkcp.Kcp.java&#x0D;&#x0A;     org.beykery.jkcp.Output.java" description="Copy compilation units" destination="=JavaUDP/src&lt;com{UDPServer.java" element1="/src\/main\/java&lt;org.beykery.jkcp{Kcp.java" element2="/src\/main\/java&lt;org.beykery.jkcp{Output.java" files="0" flags="589830" folders="0" id="org.eclipse.jdt.ui.copy" policy="org.eclipse.jdt.ui.copyResources" stamp="1561543439579" units="2" version="1.0"/>
+</session>
