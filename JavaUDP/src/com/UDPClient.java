@@ -14,7 +14,7 @@ public class UDPClient {
    
     private String sendStr = "SendString";
     private String netAddress = "127.0.0.1";
-    private final int PORT_NUM = 5066;
+    private final int PORT_NUM = 33333;
    
     private DatagramSocket datagramSocket;
     private DatagramPacket datagramPacket;

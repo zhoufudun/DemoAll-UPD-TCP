@@ -9,7 +9,7 @@ import java.net.SocketException;
 public class UDPServer {
     // 定义一些常量
     private final int MAX_LENGTH = 1024; // 最大接收字节长度
-    private final int PORT_NUM   = 5066;   // port号
+    private final int PORT_NUM   = 33333;   // port号
     // 用以存放接收数据的字节数组
     private byte[] receMsgs = new byte[MAX_LENGTH];
     // 数据报套接字

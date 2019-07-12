@@ -35,7 +35,7 @@ public class UDPProvider {
 			super.run();
 			System.out.println("信息提供者开始监听端口");
 		    try {
-				ds=new DatagramSocket(20000);//监听20000端口
+				ds=new DatagramSocket(33333);//监听20000端口
 				while(!done) {
 					//作为接收者制定一个端口用于接收信息
 			    	final byte[] buf=new byte[1024];

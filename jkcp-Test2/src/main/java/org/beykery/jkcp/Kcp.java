@@ -461,7 +461,6 @@ public class Kcp
             }
         }
     }
-
     /**
      * ack append
      * 更新segment的sn及ts放在acklist中
@@ -921,7 +920,7 @@ public class Kcp
      */
     public void flush()
     {
-        //if (updated != 0)
+        if (updated != 0)
         {
             forceFlush();
         }
