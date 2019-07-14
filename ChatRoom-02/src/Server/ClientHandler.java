@@ -1,5 +1,4 @@
 package Server;
-
 import java.io.BufferedReader;
 import java.io.IOException;
 import java.io.InputStream;
@@ -7,24 +6,40 @@ import java.io.InputStreamReader;
 import java.io.OutputStream;
 import java.io.PrintStream;
 import java.net.Socket;
+import java.nio.ByteBuffer;
+import java.nio.channels.SelectionKey;
+import java.nio.channels.Selector;
+import java.nio.channels.ServerSocketChannel;
+import java.nio.channels.SocketChannel;
+import java.util.Iterator;
 import java.util.concurrent.ExecutorService;
 import java.util.concurrent.Executors;
-
 import Utils.CloseUtils;
 //这里为什么不继承Thread？？？？？？？？？？
 //这里是收发并行线程，收线程和发送线程分开写
 public class ClientHandler {
-	  private final Socket client;    
+	  private final SocketChannel socketChannel;    
       private final ClientReadHandler clientReadHandler;
       private final ClientWriteHandler clientWriterHandler;
       private final ClientHandlerCallBack clientHandlerCallBack;
       private final String clientInfo;//记录该客户端的信息
-      ClientHandler(Socket client,ClientHandlerCallBack clientHandlerCallBack) throws IOException{
-          this.client=client;
-          this.clientReadHandler=new ClientReadHandler(client.getInputStream());
-          this.clientWriterHandler=new ClientWriteHandler(client.getOutputStream());
+      ClientHandler(SocketChannel socketChannel,ClientHandlerCallBack clientHandlerCallBack) throws IOException{
+          this.socketChannel=socketChannel;
+          //设置非阻塞模式
+          socketChannel.configureBlocking(false);
+          //
+          Selector readSelector=Selector.open();
+          //注册读取事件
+          socketChannel.register(readSelector,SelectionKey.OP_READ);
+          this.clientReadHandler=new ClientReadHandler(readSelector);
+          //
+          Selector writeSelector=Selector.open();
+          //注册读取事件
+          socketChannel.register(writeSelector,SelectionKey.OP_WRITE);
+          this.clientWriterHandler=new ClientWriteHandler(writeSelector);
+          //
           this.clientHandlerCallBack=clientHandlerCallBack;
-          this.clientInfo="IP["+client.getInetAddress().getHostAddress()+"]" + "port["+client.getPort()+"]";
+          this.clientInfo=socketChannel.getLocalAddress().toString();
           System.out.println("新客户端信息："+clientInfo);
 	     
       }
@@ -38,9 +53,9 @@ public class ClientHandler {
     	  //退出自己的clientWriterHandler
     	  clientWriterHandler.exit();  
     	  //释放资源	    
-          CloseUtils.CloseAll(client); 
+          CloseUtils.CloseAll(socketChannel); 
           //
-    	  //System.out.println("服务器关闭，断开与客户端连接，客户端信息为"+client.getInetAddress()+" port:"+client.getPort());	
+    	  System.out.println("客户端退出，客户端信息为"+clientInfo);	
       }
       //自己退出自己
       private void exitByeSelf() {
@@ -66,30 +81,65 @@ public class ClientHandler {
       //读取线程
       class ClientReadHandler extends Thread{
     	  private boolean done=false;
-    	  private final InputStream inputStream;
-    	  ClientReadHandler(InputStream inputStream){
-    		  this.inputStream=inputStream;
+    	  private final Selector selector;
+    	  private final ByteBuffer byteBuffer;
+    	  ClientReadHandler(Selector selector){
+    		  this.selector=selector;
+    		  this.byteBuffer=ByteBuffer.allocate(256);
     	  }
 		@Override
 		public void run() {
 			super.run();
 		     try {	          
-	              //得到输入流，用于数据接收
-	              BufferedReader serverInput=new BufferedReader(new InputStreamReader(inputStream));
 	              do{
 	                  //拿到客户端的一条数据
-	                  String str=serverInput.readLine();//等待数据，阻塞
-	                  if(str==null) {
-	                	  //读取超时或者异常
-	                	  System.out.println("无法读取客户端数据！");
-	                	  //退出客户端,自己退出自己
-	                	  ClientHandler.this.exitByeSelf();                	  
-	                	  break;
-	                  }else if(!"00bye00".equalsIgnoreCase(str)) {
-	                	  //客户端同时发送多条数据到服务器时，若这里诸塞，可能丢失数据，因此这里不能阻塞，这里需要及时执行，就是异步
-	                	  //回调给外面，在外面实现，通知到TCPServer
-	                	  clientHandlerCallBack.onNewMessageArrived(ClientHandler.this, str);
+	                  if(selector.select()==0) {
+	                	  //退出
+	                	  if(done) {
+	                		  break;
+	                	  }
+	                	  //没退出
+	                	  continue;
 	                  }
+	                  //有就绪的事件时
+					  Iterator<SelectionKey> iterator=selector.selectedKeys().iterator();
+					  while(iterator.hasNext()) {
+							if(done) {
+								break;
+							}
+							SelectionKey key=iterator.next();
+							//移除处理过的
+							iterator.remove();
+							//检查当前key的状态是否时我们关注的
+							//客户端达到状态
+							if(key.isReadable()) {
+								//拿到我们注册的事件
+								SocketChannel socketChannel=(SocketChannel) key.channel();
+								//清空之前的指针位置，指针回到0
+								byteBuffer.clear();
+								//非阻塞状态拿到数据
+								int readLen=socketChannel.read(byteBuffer);
+								//有数据
+								if(readLen>0) {
+									//丢弃换行符
+									String str=new String(byteBuffer.array(),0,readLen-1);
+									if(!"00bye00".equalsIgnoreCase(str)) {
+										//外面调用发送方法
+										//回调给外面，在外面实现，通知到TCPServer
+										clientHandlerCallBack.onNewMessageArrived(ClientHandler.this, str);
+									}else {
+										System.out.println("客户端退出了");
+										continue;
+									}
+								}else {
+									//读取超时或者异常
+									System.out.println("无法读取客户端数据！");
+									//退出客户端,自己退出自己
+									ClientHandler.this.exitByeSelf();                	  
+									break;
+								}
+					 		}
+						}
 	              }while(!done);	                      	             
 	          }catch (Exception e){
 	        	  if(!done) {
@@ -99,27 +149,32 @@ public class ClientHandler {
 	        	  }	        
 	          }finally {
 	        	  //释放资源	    
-	        	  CloseUtils.CloseAll(inputStream);
+	        	  CloseUtils.CloseAll(selector);
 	          }
 		}  
 		void exit() {
 			done=true;
-			CloseUtils.CloseAll(inputStream);
+			//唤醒当前的阻塞
+			selector.wakeup();
+			CloseUtils.CloseAll(selector);
 		}
       }
       //发送数据
       class ClientWriteHandler{
     	  private boolean done=false;
-    	  private final PrintStream printStream;
+    	  private final Selector selector;
+    	  private final ByteBuffer byteBuffer;
     	  private ExecutorService executorService;
-    	  ClientWriteHandler(OutputStream outputStream){
-    		  this.printStream=new PrintStream(outputStream);
+    	  ClientWriteHandler(Selector selector){
+    		  this.selector=selector;
+    		  //分配256个字节
+    		  this.byteBuffer=ByteBuffer.allocate(256);
     		  executorService=Executors.newSingleThreadExecutor();//单例线程池
     	  }
     	  void exit() {
     		  done=true;
     		  executorService.shutdownNow();//线程池立即关闭
-    		  CloseUtils.CloseAll(printStream);
+    		  CloseUtils.CloseAll(selector);
     	  } 
     	  public void send(String str) {
     		  //立即执行线程
@@ -140,15 +195,31 @@ public class ClientHandler {
 					  return;
 				  }
 				  try {	
-					  //发送给客户端
-					  ClientWriteHandler.this.printStream.println(mes);			
+					  //清空之前的指针位置
+					  byteBuffer.clear();
+					  byteBuffer.put(mes.getBytes());
+					  //反转操作，这里是重点，通过这个操作可以发送有效的数据，否者发送byteBuffer的所有内容，有一部分为空
+					  byteBuffer.flip();
+					  //未结束而且byteBuffer有内容没有发送
+					  while(!done&&byteBuffer.hasRemaining()) {
+						try {
+							//写
+							int len=socketChannel.write(byteBuffer);
+							//len=0合法
+							if(len<0) {
+								System.out.println("客户端已无法发送数据！");
+								ClientHandler.this.exitByeSelf();
+								break;
+							}
+						} catch (Exception e) {
+							e.printStackTrace();
+						}
+					  }
  
 				  } catch (Exception e) {
 					  e.printStackTrace();
 				  }
 			 }			    		  
     	  }	
-    	   
       }
-  
 }

@@ -1,16 +1,26 @@
 package Server;
 import java.io.IOException;
+import java.net.InetSocketAddress;
 import java.net.ServerSocket;
 import java.net.Socket;
+import java.nio.channels.SelectionKey;
+import java.nio.channels.Selector;
+import java.nio.channels.ServerSocketChannel;
+import java.nio.channels.SocketChannel;
 import java.util.ArrayList;
+import java.util.Iterator;
 import java.util.List;
 import java.util.concurrent.ExecutorService;
 import java.util.concurrent.Executors;
+
+import Utils.CloseUtils;
 public class TCPServer implements ClientHandler.ClientHandlerCallBack {
 	private final int port;//服务器TCP端口
 	private ClientListener mListener;
 	private final ExecutorService forwardingThreadPoolExecutor;//为什么？？？？？不明白
 	private static List<ClientHandler> clientHandlerList=new ArrayList<>();
+	private static Selector selector;
+	private static ServerSocketChannel serverSocketChannel;
 	public TCPServer(int port) {
 		super();
 		this.forwardingThreadPoolExecutor=Executors.newSingleThreadExecutor();
@@ -18,7 +28,18 @@ public class TCPServer implements ClientHandler.ClientHandlerCallBack {
 	}
 	public boolean start() {
 		try {
-			ClientListener clientListener=new ClientListener(port);
+			selector=Selector.open();
+			serverSocketChannel=ServerSocketChannel.open();
+			//设置为非阻塞
+			serverSocketChannel.configureBlocking(false);
+			//绑定本地端口
+			serverSocketChannel.socket().bind(new InetSocketAddress(port));
+			//注册客户端连接事件
+			serverSocketChannel.register(selector, SelectionKey.OP_ACCEPT);
+			//
+			System.out.println("服务器信息:"+serverSocketChannel.getLocalAddress().toString());
+			//
+			ClientListener clientListener=new ClientListener();
 			mListener=clientListener;
 			mListener.start();
 		} catch (Exception e) {
@@ -30,6 +51,8 @@ public class TCPServer implements ClientHandler.ClientHandlerCallBack {
 		if(mListener!=null) {
 			mListener.exit();
 		}
+		CloseUtils.CloseAll(selector);
+		CloseUtils.CloseAll(serverSocketChannel);
 		//保证顺序执行
 		synchronized (TCPServer.this) {
 			for(ClientHandler clientHandler:clientHandlerList) {
@@ -42,51 +65,71 @@ public class TCPServer implements ClientHandler.ClientHandlerCallBack {
 		
 	}
 	//客户端搜索，监听客户端连接
-	public class ClientListener extends Thread{
-		private ServerSocket server;
+	public class ClientListener extends Thread{		
 		private boolean done=false;			
-		public ClientListener(int port) throws IOException {
-			server=new ServerSocket(port);
-			System.out.println("服务器信息：IP="+server.getInetAddress().getHostAddress()+",port="+server.getLocalPort());
+		public ClientListener() throws IOException {
 		}
 		@Override
 		public void run() {			
 			super.run();
+			Selector selector=TCPServer.selector;
 			System.out.println("服务器准备就绪...");
+			//等待客户端连接
 			do {
-				Socket client;
+				//得到客户端
+			    Socket client;
 				try {
-					client=server.accept();//线程阻塞在这等待客户端连接
-				} catch (Exception e) {
-					//等待超时
-					continue;
-				}
-				//
-				try {
-					ClientHandler clientHandler = new ClientHandler(client,TCPServer.this);
-					synchronized (TCPServer.this) {
-						clientHandlerList.add(clientHandler);
+					//0表示没有就绪的事件（阻塞的事件）
+					if(selector.select()==0) {
+						//完成状态跳出
+						if(done) {
+							break;
+						}
+						//非完成继续下一次循环
+						continue;
 					}
-					//收到信息后转发给其他客户端
-				    clientHandler.readToPrint();
-				} catch (IOException e) {
-					System.out.println("客户端连接异常!"+e.getMessage());
+					//有就绪的事件时
+					Iterator<SelectionKey> iterator=selector.selectedKeys().iterator();
+					while(iterator.hasNext()) {
+						if(done) {
+							break;
+						}
+						SelectionKey key=iterator.next();
+						//移除处理过的
+						iterator.remove();
+						//检查当前key的状态是否时我们关注的
+						//客户端达到状态
+						if(key.isAcceptable()) {
+							//拿到我们注册的事件
+							ServerSocketChannel serverSocketChannel=(ServerSocketChannel) key.channel();
+							//非阻塞状态拿到客户端连接，（accept执行后该事件就不阻塞了）
+							SocketChannel socketChannel=serverSocketChannel.accept();
+							try {
+								ClientHandler clientHandler = new ClientHandler(socketChannel,TCPServer.this);
+								//收到信息后转发给其他客户端
+							    clientHandler.readToPrint();
+							    //添加同步处理
+								synchronized (TCPServer.this) {
+									clientHandlerList.add(clientHandler);
+								}
+							} catch (Exception e) {
+								System.out.println("客户端连接异常!"+e.getMessage());
+								e.printStackTrace();
+							} 
+				 		}
+					}
+				}catch (Exception e) {
 					e.printStackTrace();
-				} 				
-				
-			}while(!done);
+				}
+			} while(!done);
 			System.out.println("服务器已关闭!");
 		}
 		public void exit() {
 			if(done!=true) {
 				done=true;
-				try {
-					server.close();
-				} catch (IOException e) {
-					System.out.println("服务器已关闭异常!");
-					e.printStackTrace();
-				}
 			}
+			//唤醒当前的阻塞
+			selector.wakeup();
 		}
 	}
 	
@@ -122,6 +165,6 @@ public class TCPServer implements ClientHandler.ClientHandlerCallBack {
 			}
 		});
 		//打印到屏幕上
-		System.out.println("收到消息:"+"["+msg+"]"+"{"+handler.getClientInfo()+"}");
+		System.out.println("服务器收到消息:"+"["+msg+"]"+"{"+handler.getClientInfo()+"}");
 	}	
 }
