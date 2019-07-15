@@ -121,13 +121,15 @@ public class ClientHandler {
 								int readLen=socketChannel.read(byteBuffer);
 								//有数据
 								if(readLen>0) {
-									//丢弃换行符
-									String str=new String(byteBuffer.array(),0,readLen-1);
-									if(!"00bye00".equalsIgnoreCase(str)) {
+									//这里为什么是-2？？,构造器加了一个\n byteBuffer中自带一个\n
+									//丢弃换行符,,,,readLen-2,readLen-2,readLen-2,readLen-2!!!!!!
+									String str=new String(byteBuffer.array(),0,readLen-2);
+									//System.out.println(str.length());
+									if(!"bye".equalsIgnoreCase(str)) {
 										//外面调用发送方法
 										//回调给外面，在外面实现，通知到TCPServer
 										clientHandlerCallBack.onNewMessageArrived(ClientHandler.this, str);
-									}else {
+									}else if("bye".equalsIgnoreCase(str)){
 										System.out.println("客户端退出了");
 										continue;
 									}
@@ -186,7 +188,7 @@ public class ClientHandler {
     	  class WriteRunnable implements Runnable{
     		  private final String mes;  		
 			  public WriteRunnable(String str) {
-				  this.mes=str;
+				  this.mes=str+'\n';//加上结束符
 			  }
 			  @Override
 			  public void run() {
@@ -195,8 +197,10 @@ public class ClientHandler {
 					  return;
 				  }
 				  try {	
+					  /////byteBuffer需要带 结束符\n
 					  //清空之前的指针位置
 					  byteBuffer.clear();
+					  //若这里的mes是键盘读取的，会不包含结束符
 					  byteBuffer.put(mes.getBytes());
 					  //反转操作，这里是重点，通过这个操作可以发送有效的数据，否者发送byteBuffer的所有内容，有一部分为空
 					  byteBuffer.flip();

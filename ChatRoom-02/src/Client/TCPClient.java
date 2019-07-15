@@ -54,8 +54,9 @@ public class TCPClient {
             //发送到服务器
             printStream.println(str);
             //退出
-            if("00bye00".equalsIgnoreCase(str)) {
+            if("bye".equalsIgnoreCase(str)) {
             	flag=false;
+            	//System.out.println(str);
             }
         }while(flag);
         //释放资源
@@ -102,18 +103,19 @@ public class TCPClient {
 	            	  String str;
 	                  try{
 	                	  //拿到客户端的一条数据
-	                	  str=serverInput.readLine();//等待数据，阻塞							
+	                	  str=serverInput.readLine();//等待数据，阻塞	
+	                	  if(str==null) {
+		                	  //连接已经关闭
+		                	  System.out.println("连接已经关闭，无法读取数据！");               	  
+		                	  break;
+	                	  }
+	                	  //不是其他客户端的bye信息，打印
+	                	  if(!"bye".equalsIgnoreCase(str)) {
+	                		  System.out.println(str);
+	                	  }
 					  } catch (SocketTimeoutException e) {
 						  continue;//读取超时，继续等待
 					  }
-	                  if(str==null) {
-	                	  //连接已经关闭
-	                	  System.out.println("连接已经关闭，无法读取数据！");               	  
-	                	  break;
-		              }
-	                  if(!"00bye00".equalsIgnoreCase(str)) {
-	                	  System.out.println(str);
-	                  }
 	              }while(!done);	                      	             
 	          }catch (Exception e){
 	        	  if(!done) {

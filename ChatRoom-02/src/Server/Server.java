@@ -29,7 +29,7 @@ public class Server {
 		do{
 			str=bfr.readLine();//读取一行信息
 			tcpServer.boradcast(str);
-		}while(!"00bye00".equalsIgnoreCase(str));
+		}while(!"bye".equalsIgnoreCase(str));
 		
 		//退出UDP
 		UDPProvider.stop();

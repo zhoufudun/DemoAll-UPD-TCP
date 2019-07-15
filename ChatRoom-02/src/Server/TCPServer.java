@@ -77,7 +77,6 @@ public class TCPServer implements ClientHandler.ClientHandlerCallBack {
 			//等待客户端连接
 			do {
 				//得到客户端
-			    Socket client;
 				try {
 					//0表示没有就绪的事件（阻塞的事件）
 					if(selector.select()==0) {
@@ -104,7 +103,7 @@ public class TCPServer implements ClientHandler.ClientHandlerCallBack {
 							ServerSocketChannel serverSocketChannel=(ServerSocketChannel) key.channel();
 							//非阻塞状态拿到客户端连接，（accept执行后该事件就不阻塞了）
 							SocketChannel socketChannel=serverSocketChannel.accept();
-							try {
+							try { 
 								ClientHandler clientHandler = new ClientHandler(socketChannel,TCPServer.this);
 								//收到信息后转发给其他客户端
 							    clientHandler.readToPrint();
@@ -164,7 +163,11 @@ public class TCPServer implements ClientHandler.ClientHandlerCallBack {
 					
 			}
 		});
-		//打印到屏幕上
-		System.out.println("服务器收到消息:"+"["+msg+"]"+"{"+handler.getClientInfo()+"}");
+		if(msg.length()!=0) {
+			//打印到屏幕上
+			String str=new String(msg.getBytes(),0,msg.length()-1);
+			System.out.println("服务器收到消息: "+str+" {"+handler.getClientInfo()+"}");
+		}
+		
 	}	
 }
